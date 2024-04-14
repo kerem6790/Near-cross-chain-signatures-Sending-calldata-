@@ -35,7 +35,7 @@ export function BitcoinView({ props: { setStatus, wallet, MPC_CONTRACT } }) {
   async function chainSignature() {
     setStatus('🏗️ Creating transaction');
     const payload = await BTC.createPayload(senderAddress, receiver, amount);
- 
+
     setStatus('🕒 Asking MPC to sign the transaction, this might take a while...');
     const signedTransaction = await BTC.requestSignatureToMPC(wallet, MPC_CONTRACT, derivationPath, payload, senderPK);
     console.log(signedTransaction)
@@ -49,7 +49,7 @@ export function BitcoinView({ props: { setStatus, wallet, MPC_CONTRACT } }) {
   async function relayTransaction() {
     setLoading(true);
     setStatus('🔗 Relaying transaction to the Bitcoin network... this might take a while');
-    
+
     try {
       const txHash = await BTC.relayTransaction(signedTransaction);
       setStatus(`✅ Successful: https://blockstream.info/testnet/tx/${txHash}`);
@@ -78,20 +78,20 @@ export function BitcoinView({ props: { setStatus, wallet, MPC_CONTRACT } }) {
       <div className="row my-3">
         <label className="col-sm-2 col-form-label col-form-label-sm">From:</label>
         <div className="col-sm-10">
-          <input type="text" className="form-control form-control-sm" value={derivation} onChange={handleDerivationChange} disabled={loading}/>
+          <input type="text" className="form-control form-control-sm" value={derivation} onChange={handleDerivationChange} disabled={loading} />
           <div className="form-text" id="eth-sender"> {senderAddress} </div>
         </div>
       </div>
       <div className="row mb-3">
         <label className="col-sm-2 col-form-label col-form-label-sm">To:</label>
         <div className="col-sm-10">
-          <input type="text" className="form-control form-control-sm" value={receiver} onChange={(e) => setReceiver(e.target.value)} disabled={loading}/>
+          <input type="text" className="form-control form-control-sm" value={receiver} onChange={(e) => setReceiver(e.target.value)} disabled={loading} />
         </div>
       </div>
       <div className="row mb-3">
         <label className="col-sm-2 col-form-label col-form-label-sm">Amount:</label>
         <div className="col-sm-10">
-          <input type="number" className="form-control form-control-sm" value={amount} onChange={(e) => setAmount(e.target.value)} step="1" disabled={loading}/>
+          <input type="number" className="form-control form-control-sm" value={amount} onChange={(e) => setAmount(e.target.value)} step="1" disabled={loading} />
           <div className="form-text"> satoshi units </div>
         </div>
       </div>

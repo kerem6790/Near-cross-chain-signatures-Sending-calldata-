@@ -10,6 +10,7 @@ export function EthereumView({ props: { setStatus, wallet, MPC_CONTRACT } }) {
 
   const [receiver, setReceiver] = useState("0xe0f3B7e68151E9306727104973752A415c2bcbEb");
   const [amount, setAmount] = useState(0.01);
+  const [data, setData] = useState("0x");
   const [loading, setLoading] = useState(false);
   const [step, setStep] = useState("request");
   const [signedTransaction, setSignedTransaction] = useState(null);
@@ -33,11 +34,11 @@ export function EthereumView({ props: { setStatus, wallet, MPC_CONTRACT } }) {
 
   async function chainSignature() {
     setStatus('🏗️ Creating transaction');
-    const { transaction, payload } = await Eth.createPayload(senderAddress, receiver, amount);
+    const { transaction, payload } = await Eth.createPayload(senderAddress, receiver, amount, data);
 
     setStatus(`🕒 Asking ${MPC_CONTRACT} to sign the transaction, this might take a while`);
     try {
-      const signedTransaction = await Eth.requestSignatureToMPC(wallet, MPC_CONTRACT, derivationPath, payload, transaction, senderAddress);
+      const signedTransaction = await Eth.requestSignatureToMPC(wallet, MPC_CONTRACT, derivationPath, payload, transaction, senderAddress, data);
       setSignedTransaction(signedTransaction);
       setStatus(`✅ Signed payload ready to be relayed to the Ethereum network`);
       setStep('relay');
@@ -94,6 +95,13 @@ export function EthereumView({ props: { setStatus, wallet, MPC_CONTRACT } }) {
         <div className="col-sm-10">
           <input type="number" className="form-control form-control-sm" value={amount} onChange={(e) => setAmount(e.target.value)} step="0.01" disabled={loading}/>
           <div className="form-text"> Ethereum units </div>
+        </div>
+      </div>
+      <div className="row mb-3">
+        <label className="col-sm-2 col-form-label col-form-label-sm">Data:</label>
+        <div className="col-sm-10">
+        <input type="text" className="form-control form-control-sm" value={data} onChange={(e) => setData(e.target.value)} disabled={loading}/>
+          <div className="form-text"> Data to be Sent </div>
         </div>
       </div>
 

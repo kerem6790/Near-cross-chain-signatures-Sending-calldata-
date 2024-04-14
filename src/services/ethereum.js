@@ -1,7 +1,7 @@
 import { Web3 } from "web3"
-import { bytesToHex } from '@ethereumjs/util';
+import { BIGINT_1, bytesToHex } from '@ethereumjs/util';
 import { FeeMarketEIP1559Transaction } from '@ethereumjs/tx';
-import { deriveChildPublicKey, najPublicKeyStrToUncompressedHexPoint, uncompressedHexPointToEvmAddress } from '../services/kdf';
+import { deriveChildPublicKey, najPublicKeyStrToUncompressedHexPoint, uncompressedHexPointToEvmAddress } from './kdf';
 import { Common } from '@ethereumjs/common'
 
 export class Ethereum {
@@ -29,23 +29,28 @@ export class Ethereum {
     return Number(balance * 100n / ONE_ETH) / 100;
   }
 
-  async createPayload(sender, receiver, amount) {
+  
+  async createPayload(sender, receiver, amount, data) {
     const common = new Common({ chain: this.chain_id });
 
     // Get the nonce & gas price
     const nonce = await this.web3.eth.getTransactionCount(sender);
     const { maxFeePerGas, maxPriorityFeePerGas } = await this.queryGasPrice();
-    
+  
+    const hashed_data = stringToHex(data) 
+    console.log(hashed_data)
+
     // Construct transaction
     const transactionData = {
+      chain: this.chain_id,
       nonce,
       gasLimit: 21000,
       maxFeePerGas,
       maxPriorityFeePerGas,
       to: receiver,
       value: BigInt(this.web3.utils.toWei(amount, "ether")),
-      chain: this.chain_id,
-    };
+      data: hashed_data ? `0x${hashed_data}` : '0x'
+    }
 
     // Return the message hash
     const transaction = FeeMarketEIP1559Transaction.fromTxData(transactionData, { common });
@@ -53,7 +58,7 @@ export class Ethereum {
     return { transaction, payload };
   }
 
-  async requestSignatureToMPC(wallet, contractId, path, ethPayload, transaction, sender) {
+  async requestSignatureToMPC(wallet, contractId, path, ethPayload, transaction, sender, data) {
     // Ask the MPC to sign the payload
     const payload = Array.from(ethPayload.reverse());
     const request = await wallet.callMethod({ contractId, method: 'sign', args: { payload, path, key_version: 0 }, gas: '250000000000000' });
@@ -64,22 +69,32 @@ export class Ethereum {
     const s = Buffer.from(big_s, 'hex');
 
     const candidates = [0n, 1n].map((v) => transaction.addSignature(v, r, s));
+    console.log(candidates)
     const signature = candidates.find((c) => c.getSenderAddress().toString().toLowerCase() === sender.toLowerCase());
 
     if (!signature) {
       throw new Error("Signature is not valid");
     }
 
+    console.log("signature", signature);
+
     if (signature.getValidationErrors().length > 0) throw new Error("Transaction validation errors");
     if (!signature.verifySignature()) throw new Error("Signature is not valid");
 
     return signature;
   }
-
+""
   // This code can be used to actually relay the transaction to the Ethereum network
   async relayTransaction(signedTransaction) {
     const serializedTx = bytesToHex(signedTransaction.serialize());
     const relayed = await this.web3.eth.sendSignedTransaction(serializedTx);
     return relayed.transactionHash
   }
+}
+
+function stringToHex(str) {    let hex = '';
+  for(let i = 0; i < str.length; i++) {
+      hex += str.charCodeAt(i).toString(16);
+  }
+  return hex;
 }
